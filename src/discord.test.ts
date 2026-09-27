@@ -13,6 +13,14 @@ describe("discord", () => {
     expect(JSON.stringify(p)).toContain("abcdef12");
   });
 
+  test("heading is just the session name", () => {
+    const p = buildDiscordPayload("complete", "OpenCode session complete", undefined, {
+      sessionTitle: "My task",
+    });
+    expect(p.content).toBe("✅ My task");
+    expect(p.embeds[0].title).toBe("✅ My task");
+  });
+
   test("truncates long detail", () => {
     const p = buildDiscordPayload("question", "OpenCode needs input", "x".repeat(5000), {});
     expect((p.embeds[0].description ?? "").length).toBeLessThanOrEqual(2000);

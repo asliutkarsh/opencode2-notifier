@@ -3,6 +3,7 @@ import { parseOptions, type NotifierOptions } from "./config.js";
 import { classifyEvent } from "./events.js";
 import { buildSlackPayload, sendToSlack } from "./slack.js";
 import { buildDiscordPayload, sendToDiscord } from "./discord.js";
+import { SubagentTracker } from "./subagents.js";
 
 export function normalizeDir(dir: string): string {
   return dir.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
@@ -29,6 +30,7 @@ export default Plugin.define({
 
     const enabled = new Set(options.events);
     const controller = new AbortController();
+    const tracker = new SubagentTracker();
     const sessionFirstSeen = new Map<string, number>();
     const pendingComplete = new Map<string, { title: string; detail?: string; timer: ReturnType<typeof setTimeout> }>();
     const lastSent = new Map<string, number>();
@@ -77,6 +79,7 @@ export default Plugin.define({
         directory: info.directory,
         sessionTitle: info.sessionTitle,
         elapsedMs: info.elapsedMs,
+        subagents: tracker.summarize(sessionID ?? ""),
       };
       const sends: Array<Promise<void>> = [];
       if (options.slackWebhookUrl) {
@@ -118,12 +121,21 @@ export default Plugin.define({
     void (async () => {
       try {
         for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
-          // Track session starts for elapsed-time reporting.
-          if ((event as { type?: string }).type === "session.created") {
-            const sid = (event as unknown as { data?: { sessionID?: string } }).data?.sessionID;
+          const type = (event as { type?: string }).type;
+          const data = (event as unknown as { data?: Record<string, any> }).data ?? {};
+          const sid = typeof data.sessionID === "string" ? data.sessionID : undefined;
+          // Track session starts for elapsed-time reporting + subagent children.
+          if (type === "session.created") {
             if (sid && !sessionFirstSeen.has(sid)) sessionFirstSeen.set(sid, Date.now());
+            if (sid && typeof data.parentID === "string") {
+              tracker.noteCreated(data.parentID, sid, typeof data.title === "string" ? data.title : undefined);
+            }
             continue;
           }
+          if (type === "session.execution.succeeded" && sid) tracker.noteFinished(sid, "succeeded");
+          else if (type === "session.execution.failed" && sid) tracker.noteFinished(sid, "failed");
+          else if (type === "session.execution.interrupted" && sid) tracker.noteFinished(sid, "interrupted");
+          else if (type === "session.idle" && sid) tracker.noteFinished(sid, "done");
           const classified = classifyEvent(event);
           if (!classified) continue;
           if (classified.kind === "complete") {

@@ -5,6 +5,7 @@ export interface SlackContext {
   directory?: string;
   sessionTitle?: string;
   elapsedMs?: number;
+  subagents?: string;
 }
 
 const KIND_EMOJI: Record<NotifyKind, string> = {
@@ -24,20 +25,25 @@ export function formatElapsed(ms?: number): string | undefined {
   return `${h}h ${m % 60}m`;
 }
 
-export function buildSlackPayload(kind: NotifyKind, title: string, detail: string | undefined, ctx: SlackContext) {
+export function buildSlackPayload(
+  kind: NotifyKind,
+  title: string,
+  detail: string | undefined,
+  ctx: SlackContext,
+) {
   const emoji = KIND_EMOJI[kind];
+  const heading = `${emoji} ${ctx.sessionTitle ?? title}`;
   const lines: string[] = [];
-  if (ctx.sessionTitle) lines.push(`*Session:* ${ctx.sessionTitle}`);
   if (ctx.sessionID) lines.push(`*ID:* \`${ctx.sessionID.slice(0, 8)}\``);
   if (ctx.directory) lines.push(`*Dir:* \`${ctx.directory}\``);
   const elapsed = formatElapsed(ctx.elapsedMs);
   if (elapsed) lines.push(`*Elapsed:* ${elapsed}`);
+  if (ctx.subagents) lines.push(`*Subagents:* ${ctx.subagents}`);
   if (detail) lines.push(`*Detail:* ${detail}`);
-  const text = `${emoji} ${title}${ctx.sessionTitle ? ` — ${ctx.sessionTitle}` : ""}`;
   return {
-    text,
+    text: heading,
     blocks: [
-      { type: "section", text: { type: "mrkdwn", text: `*${emoji} ${title}*` } },
+      { type: "section", text: { type: "mrkdwn", text: `*${heading}*` } },
       ...(lines.length > 0
         ? [{ type: "section", text: { type: "mrkdwn", text: lines.join("\n") } }]
         : []),

@@ -5,6 +5,7 @@ export interface DiscordContext {
   directory?: string;
   sessionTitle?: string;
   elapsedMs?: number;
+  subagents?: string;
 }
 
 const KIND_EMOJI: Record<NotifyKind, string> = {
@@ -37,19 +38,20 @@ export function buildDiscordPayload(
   ctx: DiscordContext,
 ) {
   const emoji = KIND_EMOJI[kind];
+  const heading = `${emoji} ${ctx.sessionTitle ?? title}`;
   const fields: Array<{ name: string; value: string; inline: boolean }> = [];
-  if (ctx.sessionTitle) fields.push({ name: "Session", value: ctx.sessionTitle.slice(0, 256), inline: false });
   if (ctx.sessionID) fields.push({ name: "ID", value: `\`${ctx.sessionID.slice(0, 8)}\``, inline: true });
   if (ctx.directory) fields.push({ name: "Dir", value: `\`${ctx.directory.slice(0, 256)}\``, inline: true });
   const elapsed = formatElapsed(ctx.elapsedMs);
   if (elapsed) fields.push({ name: "Elapsed", value: elapsed, inline: true });
+  if (ctx.subagents) fields.push({ name: "Subagents", value: ctx.subagents.slice(0, 1024), inline: false });
 
   const description = detail ? detail.slice(0, 2000) : undefined;
   return {
-    content: `${emoji} ${title}${ctx.sessionTitle ? ` — ${ctx.sessionTitle}` : ""}`.slice(0, 2000),
+    content: heading.slice(0, 2000),
     embeds: [
       {
-        title: `${emoji} ${title}`.slice(0, 256),
+        title: heading.slice(0, 256),
         description,
         color: KIND_COLOR[kind],
         fields,

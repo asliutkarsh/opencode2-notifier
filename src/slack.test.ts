@@ -16,4 +16,19 @@ describe("slack", () => {
     expect(p.text).toContain("OpenCode needs permission");
     expect(JSON.stringify(p)).toContain("abcdef12");
   });
+
+  test("heading is just the session name", () => {
+    const p = buildSlackPayload("complete", "OpenCode session complete", undefined, {
+      sessionID: "abcdef123456",
+      sessionTitle: "My task",
+    });
+    expect(p.text).toBe("✅ My task");
+  });
+
+  test("subagents line included when present", () => {
+    const p = buildSlackPayload("complete", "OpenCode session complete", undefined, {
+      subagents: "1 running (Explore)",
+    });
+    expect(JSON.stringify(p)).toContain("1 running (Explore)");
+  });
 });

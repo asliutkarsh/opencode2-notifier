@@ -159,13 +159,14 @@ Based on the V2 `V2Event` union (`@opencode/client`):
 - **Enrichment failures:** if `session.get` fails (session gone, transient error), the notification still sends with directory only.
 - **Fan-out:** sinks send concurrently; a Slack 5xx does not cancel the Discord post and vice versa. Failures are `console.warn`'d, never thrown.
 - **Location scoping:** global plugins load once per location. Each instance only notifies for sessions in its own directory (compared case-insensitively via `session.location.directory`), so one session yields exactly one post instead of one per location.
+- **Subagent tracking (`src/subagents.ts`):** children are recorded from `session.created` (via `parentID`) and marked finished on `session.execution.*` / `session.idle`. Notifications carry a `Subagents:` line like `2 running (Explore backend, Research docs) · 1 done`. A child still marked running has not finished. Children that started before plugin load are unknown and omitted. Tracker is bounded (200 parents max).
 - **Abort:** `AbortSignal` is threaded through the event iterator and both `fetch` calls; unload aborts everything and clears pending debounce timers.
 
 ## Message format
 
-Both sinks include emoji prefix, session title, short session ID, working directory, elapsed time, and kind-specific detail.
+Both sinks head every message with just the session name plus emoji (e.g. `✅ Curating plugins list`), falling back to the kind title when untitled. Remaining lines: short session ID, working directory, elapsed time, subagent status, and kind-specific detail.
 
-Slack (`src/slack.ts`): `text` fallback + two `mrkdwn` sections. Example `text`: `🔐 OpenCode needs permission — Demo`.
+Slack (`src/slack.ts`): `text` fallback + two `mrkdwn` sections.
 
 Discord (`src/discord.ts`): `content` ping line + rich embed with per-kind color (`complete` green `0x57F287`, `error` red `0xED4245`, `permission` yellow `0xFEE75C`, `question` blurple `0x5865F2`), fields, and timestamp. Long details are truncated to Discord's 2000-char limits.
 
@@ -225,6 +226,11 @@ Logs live in `~/.local/share/opencode/log/opencode.log` — filter `role=server`
 - Notifications include session titles, directory paths, and error text. Avoid pointing them at public channels if you work on sensitive repos.
 
 ## Changelog
+
+### 0.1.2
+
+- Headings are just the session name + emoji (no more "OpenCode session complete —" prefix).
+- New `Subagents:` line with live running/done/failed counts and running titles.
 
 ### 0.1.1
 

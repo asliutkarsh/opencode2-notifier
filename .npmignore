@@ -1,0 +1,2 @@
+# Tests ship in the repo but are excluded from the published npm tarball.
+**/*.test.ts

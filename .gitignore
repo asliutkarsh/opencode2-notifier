@@ -1,4 +1,51 @@
+# Dependencies
 node_modules/
+bun.lockb
+
+# Build output
 dist/
+build/
+out/
+*.tsbuildinfo
+
+# Test / coverage artifacts
+coverage/
+.nyc_output/
+
+# Published tarballs
 *.tgz
+*.tar.gz
+
+# Env and secrets (never commit)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+bun-debug.log*
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OpenCode runtime (local state, caches, scratch)
 .opencode/
+opencode.log
+
+# Temp / scratch
+.tmp/
+.temp/

@@ -189,6 +189,21 @@ src/
   *.test.ts       # bun tests
 ```
 
+## Releasing
+
+Releases are tag-driven: pushing a GitHub Release publishes that version to npm via `.github/workflows/publish.yml` (tests + typecheck + tag/version match check run first). The release-notes changelog is auto-generated from PR labels (see `.github/release.yml`).
+
+One-time setup: create an npm granular access token (package scope `opencode2-notifier`, **bypass 2FA** enabled) and save it as the repo secret `NPM_TOKEN` (Repo → Settings → Secrets → Actions).
+
+```sh
+# 1. Bump version
+npm version patch   # or minor/major
+git push origin main --tags
+# 2. Cut the release (generates the changelog)
+gh release create v$(bun -p "require('./package.json').version") --generate-notes
+# 3. Publishing to npm happens automatically on release
+```
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |

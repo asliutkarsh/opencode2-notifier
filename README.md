@@ -10,6 +10,7 @@ OpenCode v2 plugin that notifies you on **Slack** and/or **Discord** when an age
 
 - [How it works](#how-it-works)
 - [Install](#install)
+- [Verifying installation](#verifying-installation)
 - [Slack webhook setup](#slack-webhook-setup)
 - [Discord webhook setup](#discord-webhook-setup)
 - [Configuration reference](#configuration-reference)
@@ -42,6 +43,8 @@ If no webhook is configured, the plugin logs a warning and disables itself inste
 ```sh
 opencode plugin add opencode2-notifier
 ```
+
+> `plugin add` registers the plugin as a bare string with **no options**, and this plugin requires at least one webhook URL to do anything. Convert the entry to the object form below, otherwise it disables itself with a `[opencode2-notifier] disabled: ... missing webhook` warning.
 
 Then add options to your `opencode.jsonc` (global `~/.config/opencode/opencode.jsonc` or project `.opencode/opencode.jsonc`):
 
@@ -82,6 +85,20 @@ Restart the service after config changes:
 ```sh
 opencode service restart
 ```
+
+> The env var must be visible to the background service process, not just your current shell. On Windows, set it as a User environment variable and then restart the service:
+> ```powershell
+> [Environment]::SetEnvironmentVariable('DISCORD_WEBHOOK_URL', '<url>', 'User')
+> opencode service restart
+> ```
+
+## Verifying installation
+
+This plugin is **event-only**: it registers no tools, commands, agents, or skills, so you will not see it in tool lists, `/commands`, or the TUI. That is expected. Verify instead via:
+
+1. `opencode plugin list` — should show `opencode2-notifier  0.1.0`.
+2. Server log (`~/.local/share/opencode/log/opencode.log`) — should contain `loading plugin id=opencode2-notifier` with no following error.
+3. Trigger an event (e.g. run a task that needs permission) and check your Slack/Discord channel.
 
 ## Slack webhook setup
 
@@ -175,7 +192,8 @@ src/
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `[opencode2-notifier] disabled: ... missing webhook` | No URL resolved | Set the option or export `SLACK_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL`; restart service |
+| `[opencode2-notifier] disabled: ... missing webhook` | No URL resolved (common right after `plugin add`, which writes a bare string entry with no options) | Convert to object form with `slackWebhookUrl`/`discordWebhookUrl` (see [Install](#install)); export the env var; restart service |
+| Plugin installed but "nothing to see" | Expected: event-only plugin registers no tools/commands/agents | See [Verifying installation](#verifying-installation) |
 | No `complete` post | Still inside `debounceMs`, or duplicates deduped | Lower `debounceMs` for testing (e.g. `2000`); check service logs |
 | `Slack webhook failed: 404` | Revoked/rotated webhook | Recreate the incoming webhook, update env |
 | `Discord webhook failed: 404` | Deleted webhook or wrong path | Recreate via channel Integrations, update env |

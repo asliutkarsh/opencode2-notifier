@@ -8,13 +8,24 @@
   "homepage": "https://github.com/asliutkarsh/opencode2-notifier",
   "repository": {
     "type": "git",
-    "url": "https://github.com/asliutkarsh/opencode2-notifier.git"
+    "url": "git+https://github.com/asliutkarsh/opencode2-notifier.git"
   },
-  "keywords": ["opencode", "opencode-plugin", "notifier", "slack", "discord", "notifications"],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "notifier",
+    "slack",
+    "discord",
+    "notifications"
+  ],
   "exports": {
     ".": "./src/index.ts"
   },
-  "files": ["src", "README.md", "LICENSE"],
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "@opencode/plugin": "2.0.18"
   },

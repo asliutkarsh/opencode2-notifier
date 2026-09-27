@@ -18,6 +18,7 @@ OpenCode v2 plugin that notifies you on **Slack** and/or **Discord** when an age
 - [Behavior details](#behavior-details)
 - [Message format](#message-format)
 - [Local development](#local-development)
+- [Releasing](#releasing)
 - [Troubleshooting](#troubleshooting)
 - [Security notes](#security-notes)
 - [Changelog](#changelog)
@@ -96,7 +97,7 @@ opencode service restart
 
 This plugin is **event-only**: it registers no tools, commands, agents, or skills, so you will not see it in tool lists, `/commands`, or the TUI. That is expected. Verify instead via:
 
-1. `opencode plugin list` — should show `opencode2-notifier  0.1.0`.
+1. `opencode plugin list` — should show `opencode2-notifier  0.1.2` (or newer).
 2. Server log (`~/.local/share/opencode/log/opencode.log`) — should contain `loading plugin id=opencode2-notifier` with no following error.
 3. Trigger an event (e.g. run a task that needs permission) and check your Slack/Discord channel.
 
@@ -123,8 +124,8 @@ This plugin is **event-only**: it registers no tools, commands, agents, or skill
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `slackWebhookUrl` | `string` (URL or `{env:VAR}`) | `SLACK_WEBHOOK_URL` env | Slack sink. Optional if Discord is set. |
-| `discordWebhookUrl` | `string` (URL or `{env:VAR}`) | `DISCORD_WEBHOOK_URL` env | Discord sink. Optional if Slack is set. |
+| `slackWebhookUrl` | `string` (URL or `{env:VAR}`) | `SLACK_WEBHOOK_URL` → `OPCODE2_NOTIFIER_SLACK_WEBHOOK_URL` | Slack sink. Optional if Discord is set. |
+| `discordWebhookUrl` | `string` (URL or `{env:VAR}`) | `DISCORD_WEBHOOK_URL` → `OPCODE2_NOTIFIER_DISCORD_WEBHOOK_URL` | Discord sink. Optional if Slack is set. |
 | `events` | `("complete" \| "error" \| "permission" \| "question")[]` | all four | Allowlist of notification kinds. Unknown values are ignored. |
 | `debounceMs` | `number` (ms) | `10000` | Delay-and-replace window for `complete` only. |
 | `notifyChildSessions` | `boolean` | `false` | When `false`, sessions with a `parentID` (subagents) are skipped. |
@@ -149,7 +150,7 @@ Based on the V2 `V2Event` union (`@opencode/client`):
 | `session.execution.failed`, `session.step.failed`, `session.tool.failed`, `session.compaction.failed` | `error` | immediate (includes `type: message`) |
 | `permission.asked` | `permission` | immediate (includes action + first resources + message) |
 | `form.created` | `question` | immediate (includes form title) |
-| `session.created` | — (internal) | used only to record session start time for elapsed reporting |
+| `session.created` | — (internal) | records session start time for elapsed reporting + registers subagent children (`parentID`) |
 
 ## Behavior details
 
@@ -164,9 +165,9 @@ Based on the V2 `V2Event` union (`@opencode/client`):
 
 ## Message format
 
-Both sinks head every message with just the session name plus emoji (e.g. `✅ Curating plugins list`), falling back to the kind title when untitled. Remaining lines: short session ID, working directory, elapsed time, subagent status, and kind-specific detail.
+Both sinks head every message with just the session name plus emoji (e.g. `✅ Curating plugins list`), falling back to the kind title when untitled or blank. Remaining lines: short session ID, working directory, elapsed time, subagent status, and kind-specific detail.
 
-Slack (`src/slack.ts`): `text` fallback + two `mrkdwn` sections.
+Slack (`src/slack.ts`): `text` fallback + heading section, plus a details section whenever ID/dir/elapsed/subagents/detail lines exist.
 
 Discord (`src/discord.ts`): `content` ping line + rich embed with per-kind color (`complete` green `0x57F287`, `error` red `0xED4245`, `permission` yellow `0xFEE75C`, `question` blurple `0x5865F2`), fields, and timestamp. Long details are truncated to Discord's 2000-char limits.
 
@@ -174,7 +175,7 @@ Discord (`src/discord.ts`): `content` ping line + rich embed with per-kind color
 
 ```sh
 bun install
-bun test        # 15 tests: config, event classification, slack + discord payloads
+bun test        # 28 tests: config, event classification, slack/discord payloads, location scoping, subagent tracker
 bunx tsc --noEmit
 ```
 
@@ -187,6 +188,7 @@ src/
   events.ts       # V2Event -> NotifyKind classification
   slack.ts        # Slack Block Kit payload + sender
   discord.ts      # Discord embed payload + sender
+  subagents.ts    # subagent child tracking per parent session
   *.test.ts       # bun tests
 ```
 

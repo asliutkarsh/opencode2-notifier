@@ -38,7 +38,7 @@ export function buildDiscordPayload(
   ctx: DiscordContext,
 ) {
   const emoji = KIND_EMOJI[kind];
-  const heading = `${emoji} ${ctx.sessionTitle ?? title}`;
+  const heading = `${emoji} ${ctx.sessionTitle?.trim() || title}`;
   const fields: Array<{ name: string; value: string; inline: boolean }> = [];
   if (ctx.sessionID) fields.push({ name: "ID", value: `\`${ctx.sessionID.slice(0, 8)}\``, inline: true });
   if (ctx.directory) fields.push({ name: "Dir", value: `\`${ctx.directory.slice(0, 256)}\``, inline: true });

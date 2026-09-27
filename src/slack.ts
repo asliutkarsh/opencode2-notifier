@@ -32,7 +32,7 @@ export function buildSlackPayload(
   ctx: SlackContext,
 ) {
   const emoji = KIND_EMOJI[kind];
-  const heading = `${emoji} ${ctx.sessionTitle ?? title}`;
+  const heading = `${emoji} ${ctx.sessionTitle?.trim() || title}`;
   const lines: string[] = [];
   if (ctx.sessionID) lines.push(`*ID:* \`${ctx.sessionID.slice(0, 8)}\``);
   if (ctx.directory) lines.push(`*Dir:* \`${ctx.directory}\``);

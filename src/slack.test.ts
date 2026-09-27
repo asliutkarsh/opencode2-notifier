@@ -25,6 +25,13 @@ describe("slack", () => {
     expect(p.text).toBe("✅ My task");
   });
 
+  test("blank title falls back to kind title", () => {
+    const p = buildSlackPayload("complete", "OpenCode session complete", undefined, {
+      sessionTitle: "   ",
+    });
+    expect(p.text).toBe("✅ OpenCode session complete");
+  });
+
   test("subagents line included when present", () => {
     const p = buildSlackPayload("complete", "OpenCode session complete", undefined, {
       subagents: "1 running (Explore)",

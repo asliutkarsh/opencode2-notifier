@@ -158,6 +158,7 @@ Based on the V2 `V2Event` union (`@opencode/client`):
 - **Child sessions:** `ctx.session.get()` exposes `parentID`; when `notifyChildSessions` is `false` those are dropped silently.
 - **Enrichment failures:** if `session.get` fails (session gone, transient error), the notification still sends with directory only.
 - **Fan-out:** sinks send concurrently; a Slack 5xx does not cancel the Discord post and vice versa. Failures are `console.warn`'d, never thrown.
+- **Location scoping:** global plugins load once per location. Each instance only notifies for sessions in its own directory (compared case-insensitively via `session.location.directory`), so one session yields exactly one post instead of one per location.
 - **Abort:** `AbortSignal` is threaded through the event iterator and both `fetch` calls; unload aborts everything and clears pending debounce timers.
 
 ## Message format
@@ -209,6 +210,10 @@ Logs live in `~/.local/share/opencode/log/opencode.log` — filter `role=server`
 - Notifications include session titles, directory paths, and error text. Avoid pointing them at public channels if you work on sensitive repos.
 
 ## Changelog
+
+### 0.1.1
+
+- Fix duplicate posts: notify only for sessions in the plugin instance's own location (one post per session instead of one per loaded location). Show the session's directory in the message.
 
 ### 0.1.0
 

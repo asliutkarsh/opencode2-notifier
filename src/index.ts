@@ -4,6 +4,18 @@ import { classifyEvent } from "./events.js";
 import { buildSlackPayload, sendToSlack } from "./slack.js";
 import { buildDiscordPayload, sendToDiscord } from "./discord.js";
 
+export function normalizeDir(dir: string): string {
+  return dir.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+}
+
+/** True when this plugin instance owns the session (same location). Global
+ * plugins load once per location, so without this every instance would notify
+ * for the same session. */
+export function ownsSession(ctxDirectory: string, sessionDirectory?: string): boolean {
+  if (!sessionDirectory) return true;
+  return normalizeDir(ctxDirectory) === normalizeDir(sessionDirectory);
+}
+
 export default Plugin.define({
   id: "opencode2-notifier",
   async setup(ctx) {
@@ -38,8 +50,10 @@ export default Plugin.define({
         const session = await ctx.session.get({ sessionID });
         if (!options.notifyChildSessions && session.parentID) return undefined;
         if (!sessionFirstSeen.has(sessionID)) sessionFirstSeen.set(sessionID, session.time.created);
+        const sessionDir = session.location?.directory ?? directory;
+        if (!ownsSession(directory, sessionDir)) return undefined; // another location's instance owns it
         return {
-          directory,
+          directory: sessionDir,
           sessionTitle: session.title,
           elapsedMs: Date.now() - (sessionFirstSeen.get(sessionID) ?? session.time.created),
         };
@@ -57,7 +71,7 @@ export default Plugin.define({
       if (!enabled.has(kind)) return;
       if (!shouldSend(kind, sessionID)) return;
       const info = await enrich(sessionID);
-      if (info === undefined) return; // filtered child session
+      if (info === undefined) return; // filtered child session or another location's session
       const ctxPayload = {
         sessionID,
         directory: info.directory,
